@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Role-based access control helper
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getRole() == 'admin'
+      );
+    }
+    
+    function isUser() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Is valid entity helpers
+    function isValidOrder(data) {
+      return data.keys().hasAll(['clientName', 'phone', 'designsRequested', 'designsCompleted', 'price', "paidAmount", "status", "tiktokAccountName", "tiktokUsername", "createdAt", "isProfitDistributed"])
+          && data.clientName is string && data.clientName.size() <= 200
+          && data.phone is string && data.phone.size() <= 50
+          && data.designsRequested is number
+          && data.designsCompleted is number
+          && data.price is number
+          && data.paidAmount is number
+          && data.status in ["completed", "processing", "pending"]
+          && data.tiktokAccountName is string && data.tiktokAccountName.size() <= 200
+          && data.tiktokUsername is string && data.tiktokUsername.size() <= 100
+          && data.createdAt is string && data.createdAt.size() <= 50
+          && data.isProfitDistributed is bool;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['title', 'amount', 'date', 'addedBy', 'addedByUid'])
+          && data.title is string && data.title.size() <= 200
+          && data.amount is number
+          && data.date is string && data.date.size() <= 50
+          && data.addedBy is string && data.addedBy.size() <= 100
+          && data.addedByUid == request.auth.uid;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['orderId', 'clientName', 'totalAmount', 'date', 'allocatedOmar', 'allocatedMustafa', 'allocatedSayed', 'allocatedDevelopment', 'createdByUid'])
+          && data.orderId is string && data.orderId.size() <= 100
+          && data.clientName is string && data.clientName.size() <= 200
+          && data.totalAmount is number
+          && data.date is string && data.date.size() <= 50
+          && data.allocatedOmar is number
+          && data.allocatedMustafa is number
+          && data.allocatedSayed is number
+          && data.allocatedDevelopment is number
+          && data.createdByUid == request.auth.uid;
+    }
+
+    function isValidActivityLog(data) {
+      return data.keys().hasAll(['action', 'details', 'username', 'timestamp', 'userId'])
+          && data.action is string && data.action.size() <= 50
+          && data.details is string && data.details.size() <= 200
+          && data.username is string && data.username.size() <= 100
+          && data.timestamp is string && data.timestamp.size() <= 50
+          && data.userId == request.auth.uid;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin(); 
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn();
+      allow create: if (isUser() || isAdmin()) && isValidOrder(incoming());
+      allow update: if (isUser() || isAdmin()) && isValidOrder(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /expenses/{expenseId} {
+      allow read: if isUser() || isAdmin();
+      allow create: if (isUser() || isAdmin()) && isValidExpense(incoming());
+      allow update: if isAdmin() && isValidExpense(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isUser() || isAdmin();
+      allow create: if (isUser() || isAdmin()) && isValidTransaction(incoming());
+      allow update, delete: if false; // Transactions are immutable append-only
+    }
+
+    match /logs/{logId} {
+      allow read: if isUser() || isAdmin();
+      allow create: if (isUser() || isAdmin()) && isValidActivityLog(incoming());
+      allow update, delete: if false; // Logs are immutable append-only
+    }
+  }
+}

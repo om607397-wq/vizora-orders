@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User account",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "ratio": { "type": "number" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["name", "role", "ratio"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Design order",
+      "type": "object",
+      "properties": {
+        "clientName": { "type": "string" },
+        "phone": { "type": "string" },
+        "designsRequested": { "type": "number" },
+        "designsCompleted": { "type": "number" },
+        "price": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["completed", "processing", "pending"] },
+        "tiktokAccountName": { "type": "string" },
+        "tiktokUsername": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isProfitDistributed": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "assignedUserId": { "type": "string" }
+      },
+      "required": ["clientName", "phone", "designsRequested", "designsCompleted", "price", "paidAmount", "status", "tiktokAccountName", "tiktokUsername", "createdAt", "isProfitDistributed"]
+    },
+    "expense": {
+      "title": "Expense",
+      "description": "Company expense",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "addedBy": { "type": "string" },
+        "addedByUid": { "type": "string" }
+      },
+      "required": ["title", "amount", "date", "addedBy"]
+    },
+    "transaction": {
+      "title": "Transaction",
+      "description": "Profit distribution transaction",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "date": { "type": "string" },
+        "allocatedOmar": { "type": "number" },
+        "allocatedMustafa": { "type": "number" },
+        "allocatedSayed": { "type": "number" },
+        "allocatedDevelopment": { "type": "number" },
+        "createdByUid": { "type": "string" }
+      },
+      "required": ["orderId", "clientName", "totalAmount", "date", "allocatedOmar", "allocatedMustafa", "allocatedSayed", "allocatedDevelopment"]
+    },
+    "activityLog": {
+      "title": "ActivityLog",
+      "description": "System activity log",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "username": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["action", "details", "username", "timestamp", "userId"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "User profiles"
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "#/entities/order" },
+      "description": "List of orders"
+    },
+    "expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/expense" },
+      "description": "List of expenses"
+    },
+    "transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/transaction" },
+      "description": "List of transactions"
+    },
+    "logs/{logId}": {
+      "schema": { "$ref": "#/entities/activityLog" },
+      "description": "List of logs"
+    }
+  }
+}
